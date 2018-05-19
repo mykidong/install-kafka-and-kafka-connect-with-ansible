@@ -1,0 +1,28 @@
+
+kafka_home: /usr/lib/kafka
+
+kafka_connect_conf_dir: connect-conf
+
+kafka_log_dir: /data01/log/kafka
+
+kafka_connect_log4j_dir: etc/kafka
+
+connect_worker_properties: worker.properties
+connect_log4j_properties: connect-log4j.properties
+
+kafka_server_host1: "{{ hostvars[groups['kafka-hosts'][0]]['inventory_hostname'] }}:9092"
+kafka_server_host2: "{{ hostvars[groups['kafka-hosts'][1]]['inventory_hostname'] }}:9092"
+
+kafka_brokers: "{{ kafka_server_host1 }},{{ kafka_server_host2 }}"
+group_id: mykidong-connect-cluster
+kafka_schema_registry: "{{ hostvars[groups['kafka-schema-registry-hosts'][0]]['inventory_hostname'] }}"
+schema_registry_url: "http://{{ kafka_schema_registry }}:8081"
+kafka_connect_rest_port: 8083
+
+topic_offset: mykidong-connect-offsets
+topic_config: mykidong-connect-configs
+topic_status: mykidong-connect-status
+
+pid_file: pid_connect
+
+

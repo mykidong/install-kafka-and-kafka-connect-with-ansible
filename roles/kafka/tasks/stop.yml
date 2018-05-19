@@ -1,0 +1,20 @@
+- name: Stopping kafka
+  shell: "{{ item }}"
+  args:
+    chdir: "{{ kafka_home }}"
+    executable: /bin/bash
+  become_user: kafka
+  with_items:
+  - bin/kafka-server-stop
+  ignore_errors: true
+
+- name: Stopping schema registry
+  shell: "{{ item }}"
+  args:
+    chdir: "{{ kafka_home }}"
+    executable: /bin/bash
+  become_user: kafka
+  with_items:
+  - bin/schema-registry-stop
+  when: inventory_hostname in groups['kafka-schema-registry-hosts']
+  ignore_errors: true

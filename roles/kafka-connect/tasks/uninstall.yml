@@ -1,0 +1,19 @@
+- name: Stopping kafka connect
+  shell: "kill $(cat {{ item }})"
+  args:
+    chdir: "{{ kafka_home }}"
+    executable: /bin/bash
+  become_user: kafka
+  with_items:
+  - "{{ pid_file }}"
+  ignore_errors: true
+
+- name: Removing kafka connect directories
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+  - "{{ kafka_log_dir }}"
+  - "{{ kafka_home }}/{{ kafka_connect_conf_dir }}"
+  become_user: kafka
+

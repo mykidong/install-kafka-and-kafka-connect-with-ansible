@@ -1,0 +1,146 @@
+- name: Creating system group hadoop
+  group:
+    name: hadoop
+    state: present
+  become: true
+
+- name: Creating system account kafka
+  user:
+    name: kafka
+    groups: hadoop
+    state: present
+    createhome: no
+  become: true
+
+- name: Creating Kafka directories
+  file: 
+    path: "{{ item }}"
+    state: directory 
+    owner: kafka 
+    group: hadoop
+    mode: 0755
+  with_items:
+  - "{{ kafka_home }}"
+  - "{{ kafka_conf_dir }}"
+  - "{{ kafka_log_dir }}"
+  - "{{ data_dir1 }}"
+  - "{{ data_dir2 }}"
+  
+- name: Creating kafka temp directory
+  file:
+    path: "{{ kafka_temp_dir }}"
+    state: directory
+  
+- name: Copying Kafka Distribution
+  copy:
+    src: "{{ playbook_dir }}/roles/{{ role_name }}/files/{{ kafka_dist_file }}"
+    dest: "{{ kafka_temp_dir }}"
+    
+- name: Extracting Kafka
+  shell: "tar -zxf /tmp/kafka/{{ kafka_dist_file }} -C {{ kafka_temp_dir }}"
+  args:
+    executable: /bin/bash
+    
+- name: Extracting Kafka 2
+  shell: "cp -R {{ kafka_temp_dir }}/{{ kafka_dist_dir }}/* {{ kafka_home }}"
+  args:
+    executable: /bin/bash
+    
+- name: Removing Kafka in tmp
+  file:
+    path: "{{ kafka_temp_dir }}"
+    state: absent 
+  become: yes
+    
+- name: "Copying configuration file in {{ kafka_home }}/config to {{ kafka_conf_dir }}"
+  shell: "cp -R {{ kafka_home }}/etc/* {{ kafka_conf_dir }}"
+  args:
+    executable: /bin/bash
+
+- name: "Removing {{ kafka_home }}/config"
+  file:
+    path: "{{ kafka_home }}/etc"
+    state: absent 
+  become: yes
+  
+
+- name: Linking kakfa directories
+  file: 
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+    state: link
+  with_items:
+    - { src: '{{ kafka_log_dir }}', dest: '{{ kafka_home }}/logs' }
+    - { src: '{{ kafka_conf_dir }}', dest: '{{ kafka_home }}/etc' }
+
+    
+- name: Copying server properties to kafka conf directory
+  template:
+    src: "{{ playbook_dir }}/roles/{{ role_name }}/templates/{{ item.src }}"
+    dest: "{{ item.dest }}"
+    owner: kafka 
+    group: hadoop 
+    mode: 0755
+  with_items:
+  - { src: 'server.properties', dest: '{{ kafka_server_conf_dir }}' }
+  - { src: 'schema-registry.properties', dest: '{{ kafka_schema_registry_conf_dir }}' }
+ 
+- name: set kafka server properties
+  shell: "echo broker.id=0 >> {{ kafka_server_conf_dir }}/server.properties"
+  args:
+    executable: /bin/bash
+  when: (inventory_hostname == "{{ broker_node1 }}")
+  
+- name: set kafka server properties 2
+  shell: "echo broker.id=1 >> {{ kafka_server_conf_dir }}/server.properties"
+  args:
+    executable: /bin/bash
+  when: (inventory_hostname == "{{ broker_node2 }}")
+
+
+- name: chown kafka directories
+  file:
+    path: "{{ item }}"
+    owner: kafka
+    group: hadoop
+    recurse: yes
+    mode: 0755
+  become: yes
+  with_items:
+  - "{{ kafka_log_dir }}"
+  - "{{ kafka_conf_dir }}"
+  - "{{ kafka_home }}"
+    
+- name: Setting KAFKA environment variables
+  shell: "{{ item }}"
+  args:
+    executable: /bin/bash
+  with_items:
+  - "echo export KAFKA_LOG_DIR={{ kafka_log_dir }} >> /etc/profile.d/kafka.sh"
+  - "echo export KAFKA_PID_DIR={{ kafka_home }} >> /etc/profile.d/kafka.sh"
+  - "echo export KAFKA_HOME={{ kafka_home }} >> /etc/profile.d/kafka.sh"
+  - "echo export KAFKA_CONF_DIR={{ kafka_conf_dir }} >> /etc/profile.d/kafka.sh"
+  - "source /etc/profile"
+  
+- name: Setting files and procs number
+  shell: "{{ item }}"
+  args:
+    executable: /bin/bash
+  with_items:
+  - "echo kafka   - nofile 32768 >> /etc/security/limits.d/kafka.conf"
+  - "echo kafka   - nproc  65536 >> /etc/security/limits.d/kafka.conf"
+  
+- name: Starting kafka broker
+  shell: "export JAVA_HOME={{ java_home }} && nohup bin/kafka-server-start {{ kafka_server_conf_dir }}/server.properties > /dev/null &"
+  args:
+    chdir: "{{ kafka_home }}"
+  become_user: kafka
+
+- name: Starting kafka schema registry
+  shell: "export JAVA_HOME={{ java_home }} && nohup bin/schema-registry-start {{ kafka_schema_registry_conf_dir }}/schema-registry.properties > /dev/null &"
+  args:
+    chdir: "{{ kafka_home }}"
+  when: inventory_hostname in groups['kafka-schema-registry-hosts']
+  become_user: kafka
+
+  

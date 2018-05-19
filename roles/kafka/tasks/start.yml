@@ -1,0 +1,12 @@
+- name: Starting kafka broker
+  shell: "export JAVA_HOME={{ java_home }} && nohup bin/kafka-server-start {{ kafka_server_conf_dir }}/server.properties > /dev/null &"
+  args:
+    chdir: "{{ kafka_home }}"
+  become_user: kafka
+
+- name: Starting kafka schema registry
+  shell: "export JAVA_HOME={{ java_home }} && nohup bin/schema-registry-start {{ kafka_schema_registry_conf_dir }}/schema-registry.properties > /dev/null &"
+  args:
+    chdir: "{{ kafka_home }}"
+  when: inventory_hostname in groups['kafka-schema-registry-hosts']
+  become_user: kafka

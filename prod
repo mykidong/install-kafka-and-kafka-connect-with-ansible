@@ -1,0 +1,13 @@
+# group definition.
+
+[zookeeper-hosts]
+mykidong-d01.mykidong.io
+mykidong-d02.mykidong.io
+mykidong-d03.mykidong.io
+
+[kafka-hosts]
+mykidong-d02.mykidong.io
+mykidong-d03.mykidong.io
+
+[kafka-schema-registry-hosts]
+mykidong-d02.mykidong.io

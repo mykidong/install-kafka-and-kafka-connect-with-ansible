@@ -1,0 +1,20 @@
+- hosts: "{{ target_hosts }}"
+  remote_user: mykidong
+  become: true
+
+  vars:
+  - ansible_ssh_user: mykidong
+  - ansible_ssh_private_key_file: "~/.ssh/id_rsa"
+    
+  vars_files:
+  - "roles/{{ role_name }}/defaults/main.yml"
+  
+  tasks:
+  - include: "roles/{{ role_name }}/tasks/install.yml"
+    when: ("{{ run_option }}" == "install")
+    
+  - include: "roles/{{ role_name }}/tasks/uninstall.yml"
+    when: ("{{ run_option }}" == "uninstall") 
+    
+  - include: "roles/{{ role_name }}/tasks/main.yml"
+    when: ("{{ run_option }}" == "reinstall") 

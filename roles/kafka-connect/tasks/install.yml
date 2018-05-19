@@ -1,0 +1,26 @@
+- name: Creating kafka connect directories
+  file:
+    path: "{{ item }}"
+    state: directory
+  with_items:
+  - "{{ kafka_log_dir }}"
+  - "{{ kafka_home }}/{{ kafka_connect_conf_dir }}"
+  become_user: kafka
+
+- name: Copying worker properites
+  template:
+    src: "{{ playbook_dir }}/roles/{{ role_name }}/templates/{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items:
+  - { src: '{{ connect_worker_properties }}', dest: '{{ kafka_home }}/{{ kafka_connect_conf_dir }}' }
+  - { src: '{{ connect_log4j_properties }}', dest: '{{ kafka_home }}/{{ kafka_connect_log4j_dir }}' }
+  become_user: kafka
+
+- name: Starting kafka connect
+  shell: "nohup bin/connect-distributed {{ kafka_connect_conf_dir }}/{{ connect_worker_properties }} > /dev/null 2>&1 & echo $! > {{ pid_file }}"
+  args:
+    chdir: "{{ kafka_home }}"
+  become_user: kafka
+
+
+  

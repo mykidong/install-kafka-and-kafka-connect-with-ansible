@@ -1,0 +1,50 @@
+- name: Stopping kafka
+  shell: "{{ item }}"
+  args:
+    chdir: "{{ kafka_home }}"
+    executable: /bin/bash
+  become_user: kafka
+  with_items:
+  - bin/kafka-server-stop
+  ignore_errors: true
+
+- name: Stopping schema registry
+  shell: "{{ item }}"
+  args:
+    chdir: "{{ kafka_home }}"
+    executable: /bin/bash
+  become_user: kafka
+  with_items:
+  - bin/schema-registry-stop
+  when: inventory_hostname in groups['kafka-schema-registry-hosts']
+  ignore_errors: true
+
+- name: Removing profile and limits conf
+  file:
+    path: "{{ item }}"
+    state: absent
+  with_items:
+  - "/etc/profile.d/kafka.sh"
+  - "/etc/security/limits.d/kafka.conf"
+
+  
+- name: Removing KAFKA directories
+  file: 
+    path: "{{ item }}"
+    state: absent  
+  with_items:
+  - "{{ kafka_home }}"
+  - "{{ kafka_conf_dir }}"
+  - "{{ kafka_log_dir }}"
+  - "{{ data_dir1 }}"
+  - "{{ data_dir2 }}"
+  
+- name: Removing Users
+  user:
+    name: "{{ item }}"
+    state: absent
+  become: true
+  with_items:
+  - "kafka"
+    
+  

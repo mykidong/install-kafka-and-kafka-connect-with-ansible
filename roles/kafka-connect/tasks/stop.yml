@@ -1,0 +1,9 @@
+- name: Stopping kafka connect
+  shell: "kill $(cat {{ item }})"
+  args:
+    chdir: "{{ kafka_home }}"
+    executable: /bin/bash
+  become_user: kafka
+  with_items:
+  - "{{ pid_file }}"
+  ignore_errors: true

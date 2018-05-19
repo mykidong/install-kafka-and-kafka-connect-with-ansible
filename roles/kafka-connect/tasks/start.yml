@@ -1,0 +1,5 @@
+- name: Starting kafka connect
+  shell: "nohup bin/connect-distributed {{ kafka_connect_conf_dir }}/{{ connect_worker_properties }} > /dev/null 2>&1 & echo $! > {{ pid_file }}"
+  args:
+    chdir: "{{ kafka_home }}"
+  become_user: kafka
